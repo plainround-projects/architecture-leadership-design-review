@@ -1,0 +1,44 @@
+# The facts of the uploads proposal and the scenarios the review tries. Read by `design-review fitness`.
+# `expect` is the verdict the review recorded for the scenario; the command fails when a scenario gives another one.
+
+[load]
+listings_per_week = 120000      # the setting: 120,000 listings a week
+photos_per_listing = 10         # sellers upload up to 10 photos per listing
+weekend_share = 0.70            # most of them between Friday evening and Sunday night
+weekend_days = 2.5              # 216,000 seconds
+
+[requirement]
+peak_uploads_per_second = 40    # R1
+thumbnail_percentile = 95       # R3: 95 percent ...
+thumbnail_seconds = 30          # ... within 30 seconds of upload
+
+[service]
+seconds_per_photo_per_worker = 2.0   # three sizes in about 2 seconds, so 0.5 photos a second per worker
+
+[burst]
+every_seconds = 3600            # a burst at the peak rate at the start of every hour ...
+length_seconds = 60             # ... lasting a minute; the quiet rate is chosen so the mean stays at the average
+
+[thumbnails.draft1]             # the proposal: 1 worker
+workers = 1
+expect = "fail"
+
+[thumbnails.floor]              # the sample record's "target 8 workers": covers the average, not the burst
+workers = 8
+expect = "fail"
+
+[thumbnails.ceiling]            # the review's decision: autoscale on queue age, floor 8, ceiling 80
+workers = 80
+expect = "pass"
+
+[durability.draft1]             # the response goes out once the file is stored, the row comes after
+order = ["put_object", "respond", "write_row"]
+expect = "fail"
+
+[durability.sequential]         # file, then row, then response: nothing accepted is lost, but a crash leaves an orphan
+order = ["put_object", "write_row", "respond"]
+expect = "pass"
+
+[durability.reviewed]           # the review's decision: the row first, as PENDING
+order = ["write_row_pending", "put_object", "mark_stored", "respond"]
+expect = "pass"
