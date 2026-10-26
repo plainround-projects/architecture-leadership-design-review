@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "architecture-leadership-design-review"
+version = "0.1.0"
+description = "Reviews a system proposal against quantified requirements: lints the proposal, requirements and review record, and runs fitness functions for capacity, queue age and write order."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Sumit Srivastava" }]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<10",
+    "pytest-cov>=5",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "import-linter>=2.0",
+    "pip-audit>=2.7",
+]
+
+[project.scripts]
+design-review = "design_review.interfaces.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "N", "C4", "RUF", "PT", "D100", "D101", "D103", "D104"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src", "tests"]
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[tool.coverage.run]
+source = ["design_review"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+
+[tool.importlinter]
+root_package = "design_review"
+
+[[tool.importlinter.contracts]]
+name = "Layers: interfaces -> infrastructure -> application -> domain, never upward"
+type = "layers"
+layers = [
+    "design_review.interfaces",
+    "design_review.infrastructure",
+    "design_review.application",
+    "design_review.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "Domain and application use only the standard library and each other"
+type = "forbidden"
+source_modules = ["design_review.domain", "design_review.application"]
+forbidden_modules = ["design_review.infrastructure", "design_review.interfaces"]
