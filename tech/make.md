@@ -190,6 +190,7 @@ lint: $(STAMP) ## ruff check, ruff format check, mypy, import-linter, and the do
 `lint` runs five different checks, one after the other. The first failure stops it. Each tool has its own file in
 this folder: `ruff.md`, `mypy.md`, `import-linter.md`. The last line runs this repository's own document checker.
 
+
 `Makefile`:
 
 ```make
@@ -231,6 +232,201 @@ clean: down
 `down` deletes generated output. `clean` has `down` as a prerequisite and also deletes the virtual environment and
 every cache folder. `rm -rf` removes a folder and everything in it without asking.
 
+### The complete file `Makefile`, line by line
+
+`Makefile` lines 1 to 6:
+
+```make
+# make up | run | test | lint | audit | check | down   (make help lists all)
+PYTHON ?= $(shell command -v python3.13 || command -v python3.12 || command -v python3)
+VENV := .venv
+PY := $(VENV)/bin/python
+STAMP := $(VENV)/.installed
+CLI := $(VENV)/bin/design-review
+```
+
+> **In plain words.** A Makefile is a list of **rules**. A rule has a target (a name), the things it needs first, and a recipe (shell commands, each line starting with a tab). `make name` runs the recipe after making sure the needs are ready. `$(NAME)` means "the value of the Make variable NAME"; `$@` means "this rule's target".
+
+- Sets the Make variable `PYTHON` only if it is not already set to `$(shell command -v python3.13 || command -v python3.12 || command -v python3)`. The `$(shell ...)` part runs a shell command and uses its output.
+- Sets the Make variable `VENV` once, right now to `.venv`.
+- Sets the Make variable `PY` once, right now to `$(VENV)/bin/python`.
+- Sets the Make variable `STAMP` once, right now to `$(VENV)/.installed`.
+- Sets the Make variable `CLI` once, right now to `$(VENV)/bin/design-review`.
+
+`Makefile` lines 8 to 9:
+
+```make
+-include .env
+export
+```
+
+- `-include .env` reads that file if it exists; the leading `-` means "do not fail if it is missing". Its `NAME=value` lines become Make variables.
+- `export` on its own passes every Make variable to the programs Make starts, so they see the settings from `.env`.
+
+`Makefile` lines 11 to 11:
+
+```make
+.PHONY: help install env up run report test lint format audit check down clean
+```
+
+- `.PHONY` lists names that are commands, not files, so Make always runs them even if a file of that name exists.
+
+`Makefile` lines 13 to 14:
+
+```make
+help: ## list the targets
+	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | sed -E 's/:.*## /\t/' | sort
+```
+
+- Defines the target `help`. It has no prerequisites. Its help text is "list the targets".
+- Recipe line: runs grep, which searches text with `-hE` (hide file names, extended regex), `^[a-z-]+:.*##`, `$(MAKEFILE_LIST)`; then its output is passed to a command that runs sed, the stream editor with `-E` (extended regular expressions), `s/:.*## /\t/`; then its output is passed to a command that runs sort, which orders lines. (the leading `@` stops Make from printing the command first)
+
+`Makefile` lines 16 to 20:
+
+```make
+$(STAMP): requirements-dev.lock pyproject.toml
+	$(PYTHON) -m venv $(VENV)
+	$(VENV)/bin/pip install -q --require-hashes -r requirements-dev.lock
+	$(VENV)/bin/pip install -q --no-deps -e .
+	touch $@
+```
+
+- Defines the target `$(STAMP)`. It needs `requirements-dev.lock pyproject.toml` to be ready first.
+- Recipe line: runs `venv` with `$(VENV)` (run through Python with `-m`).
+- Recipe line: runs pip, the package installer, subcommand `install` with `-q` (quiet: print less), `--require-hashes` (refuse any package without a pinned hash), `-r requirements-dev.lock` (read the list from the named file).
+- Recipe line: runs pip, the package installer, subcommand `install` with `-q` (quiet: print less), `--no-deps` (do not install or resolve dependencies), `-e` (editable install (link to the source) / extended regex / stop on error, by program), `.`.
+- Recipe line: runs touch, which creates an empty file or refreshes its date with `$@`.
+
+`Makefile` lines 22 to 22:
+
+```make
+install: $(STAMP) ## create .venv from the hash-pinned lock file
+```
+
+- Defines the target `install`. It needs `$(STAMP)` to be ready first. Its help text is "create .venv from the hash-pinned lock file".
+
+`Makefile` lines 24 to 25:
+
+```make
+env:
+	@[ -f .env ] || { cp .env.example .env; echo "created .env from .env.example"; }
+```
+
+- Defines the target `env`. It has no prerequisites.
+- Recipe line: tests a condition: `-f .env`; if that fails, it runs cp, which copies files with `.env.example`, `.env`; then it prints `created .env from .env.example`. (the leading `@` stops Make from printing the command first)
+
+`Makefile` lines 27 to 27:
+
+```make
+up: env $(STAMP) ## prepare the environment (there are no services to start)
+```
+
+- Defines the target `up`. It needs `env $(STAMP)` to be ready first. Its help text is "prepare the environment (there are no services to start)".
+
+`Makefile` lines 29 to 32:
+
+```make
+run: up ## run every document check and the fitness functions, then write the report
+	$(CLI) check
+	$(CLI) fitness
+	$(CLI) report
+```
+
+- Defines the target `run`. It needs `up` to be ready first. Its help text is "run every document check and the fitness functions, then write the report".
+- Recipe line: runs the project's command-line program with the subcommand `check`.
+- Recipe line: runs the project's command-line program with the subcommand `fitness`.
+- Recipe line: runs the project's command-line program with the subcommand `report`.
+
+`Makefile` lines 34 to 35:
+
+```make
+report: up ## write build/report.md (document findings and the fitness table)
+	$(CLI) report
+```
+
+- Defines the target `report`. It needs `up` to be ready first. Its help text is "write build/report.md (document findings and the fitness table)".
+- Recipe line: runs the project's command-line program with the subcommand `report`.
+
+`Makefile` lines 37 to 39:
+
+```make
+test: $(STAMP) ## unit tests with coverage (domain and application must stay at 95% or more)
+	$(PY) -m pytest tests --cov=design_review --cov-report=term
+	$(PY) -m coverage report --include='src/design_review/domain/*,src/design_review/application/*' --fail-under=95
+```
+
+- Defines the target `test`. It needs `$(STAMP)` to be ready first. Its help text is "unit tests with coverage (domain and application must stay at 95% or more)".
+- Recipe line: runs pytest, the test runner with `tests`, `--cov=design_review` (measure coverage of this package), `--cov-report=term` (how to print the coverage report) (run through the project's Python with `-m`).
+- Recipe line: runs coverage.py, which measures which lines the tests ran with `report`, `--include=src/design_review/domain/*,src/design_review/application/*` (only these files), `--fail-under=95` (exit with an error if the total is lower than this percent) (run through the project's Python with `-m`).
+
+`Makefile` lines 41 to 46:
+
+```make
+lint: $(STAMP) ## ruff check, ruff format check, mypy, import-linter, and the document checks
+	$(VENV)/bin/ruff check .
+	$(VENV)/bin/ruff format --check .
+	$(VENV)/bin/mypy
+	$(VENV)/bin/lint-imports
+	$(CLI) check
+```
+
+- Defines the target `lint`. It needs `$(STAMP)` to be ready first. Its help text is "ruff check, ruff format check, mypy, import-linter, and the document checks".
+- Recipe line: runs ruff, the linter and formatter with `check`, `.`.
+- Recipe line: runs ruff, the linter and formatter with `format`, `--check` (report only; change nothing), `.`.
+- Recipe line: runs mypy, the type checker.
+- Recipe line: runs import-linter, the architecture rule checker.
+- Recipe line: runs the project's command-line program with the subcommand `check`.
+
+`Makefile` lines 48 to 50:
+
+```make
+format: $(STAMP) ## apply ruff's formatting and safe fixes
+	$(VENV)/bin/ruff check --fix .
+	$(VENV)/bin/ruff format .
+```
+
+- Defines the target `format`. It needs `$(STAMP)` to be ready first. Its help text is "apply ruff's formatting and safe fixes".
+- Recipe line: runs ruff, the linter and formatter with `check`, `--fix` (apply the fixes that are safe), `.`.
+- Recipe line: runs ruff, the linter and formatter with `format`, `.`.
+
+`Makefile` lines 52 to 53:
+
+```make
+audit: $(STAMP) ## check the locked dependencies for known vulnerabilities
+	$(VENV)/bin/pip-audit --no-deps --disable-pip -r requirements-dev.lock
+```
+
+- Defines the target `audit`. It needs `$(STAMP)` to be ready first. Its help text is "check the locked dependencies for known vulnerabilities".
+- Recipe line: runs pip-audit, the vulnerability scanner with `--no-deps` (do not install or resolve dependencies), `--disable-pip` (do not use pip to resolve), `-r requirements-dev.lock` (read the list from the named file).
+
+`Makefile` lines 55 to 55:
+
+```make
+check: lint test ## everything CI runs apart from the audit
+```
+
+- Defines the target `check`. It needs `lint test` to be ready first. Its help text is "everything CI runs apart from the audit".
+
+`Makefile` lines 57 to 58:
+
+```make
+down: ## remove generated output (nothing is running)
+	rm -rf build
+```
+
+- Defines the target `down`. It has no prerequisites. Its help text is "remove generated output (nothing is running)".
+- Recipe line: runs rm, which deletes files with `-rf` (delete folders and everything inside without asking), `build`.
+
+`Makefile` lines 60 to 61:
+
+```make
+clean: down
+	rm -rf $(VENV) .pytest_cache .mypy_cache .ruff_cache .import_linter_cache .coverage htmlcov
+```
+
+- Defines the target `clean`. It needs `down` to be ready first.
+- Recipe line: runs rm, which deletes files with `-rf` (delete folders and everything inside without asking), `$(VENV)`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `.import_linter_cache`, `.coverage`, `htmlcov`.
+
 ## Try it yourself
 
 From the repository root:
@@ -238,8 +434,7 @@ From the repository root:
 ```bash
 make help
 ```
-Expect one line per documented target: `audit`, `check`, `down`, `format`, `help`, `install`, `lint`, `report`, `run`,
-`test`, `up`, each followed by a tab and its description.
+Expect one line per documented target: `audit`, `check`, `down`, `format`, `help`, `install`, `lint`, `report`, `run`, `test`, `up`, each followed by a tab and its description.
 
 ```bash
 make -n test

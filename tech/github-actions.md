@@ -66,6 +66,64 @@ jobs:
 
 Each `-` begins a list item (a step). Indentation is meaningful in YAML (see `yaml.md`).
 
+### The complete file `.github/workflows/ci.yml`, line by line
+
+`.github/workflows/ci.yml` lines 1 to 1:
+
+```yaml
+name: ci
+```
+
+> **In plain words.** YAML is a settings format that uses indentation (spaces, never tabs) to show what belongs to what. `key: value` sets a value, `- item` is one entry of a list, `&name` names a block and `*name` reuses it, and `#` starts a comment.
+
+- A setting `name` (a label shown in the interface) is `ci`.
+
+`.github/workflows/ci.yml` lines 3 to 3:
+
+```yaml
+on: [push, pull_request]
+```
+
+- A setting `on` (the events that start the workflow) is `[push, pull_request]`.
+
+`.github/workflows/ci.yml` lines 5 to 20:
+
+```yaml
+jobs:
+  check:
+    name: Format, lint, types, import rules, document checks, tests with coverage, dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: make check
+      - run: make audit
+      - run: make run
+      - uses: actions/upload-artifact@v4
+        with:
+          name: report
+          path: build/report.md
+```
+
+- A setting `jobs` (the jobs to run) starts a group; the more indented lines below belong to it.
+- A setting `check` starts a group; the more indented lines below belong to it.
+- A setting `name` (a label shown in the interface) is `Format, lint, types, import rules, document checks, tests with coverage, dependency audit`.
+- A setting `runs-on` (the kind of machine) is `ubuntu-latest`.
+- A setting `steps` (the steps of the job, in order) starts a group; the more indented lines below belong to it.
+- `uses` (runs a packaged action): the action `actions/checkout@v4`; the part after `@` is the version tag.
+- `uses` (runs a packaged action): the action `actions/setup-python@v5`; the part after `@` is the version tag.
+- A setting `with` (inputs for the action) starts a group; the more indented lines below belong to it.
+- A setting `python-version` (the Python version to install) is `"3.12"`.
+- `run` (a shell command to run): runs Make with `check`.
+- `run` (a shell command to run): runs Make with `audit`.
+- `run` (a shell command to run): runs Make with `run`.
+- `uses` (runs a packaged action): the action `actions/upload-artifact@v4`; the part after `@` is the version tag.
+- A setting `with` (inputs for the action) starts a group; the more indented lines below belong to it.
+- A setting `name` (a label shown in the interface) is `report`.
+- A setting `path` (the file or folder) is `build/report.md`.
+
 ## Try it yourself
 
 ```bash

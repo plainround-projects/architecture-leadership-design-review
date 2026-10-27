@@ -89,8 +89,7 @@ The marker after `;` means: only on Windows. On macOS and Linux pip skips the li
 # No runtime dependencies: the toolkit uses the standard library only.
 ```
 
-The runtime lock has no packages, because `dependencies = []` in `pyproject.toml`. The program uses only Python's
-standard library.
+The runtime lock has no packages, because `dependencies = []` in `pyproject.toml`. The program uses only Python's standard library.
 
 ## Try it yourself
 

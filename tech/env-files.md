@@ -75,6 +75,25 @@ The function receives the environment as a mapping (`Mapping[str, str]`), so tes
 reads each name with `env.get(NAME, default)`, converts to a number, and raises `SettingsError` for a value it
 cannot accept. `cli.py` catches that error, prints `configuration error: ...` to stderr and returns exit code 2.
 
+### The complete file `.env.example`, line by line
+
+`.env.example` lines 1 to 6:
+
+```ini
+# Where the documents and the model live (the repository root by default).
+REVIEW_ROOT=.
+# Where `make report` writes report.md.
+REPORT_DIR=build
+# Two pages: the most words a proposal may have.
+PROPOSAL_MAX_WORDS=1000
+```
+
+> **In plain words.** A `.env` file is a list of `NAME=value` lines that become settings (environment variables) for the programs; a line starting with `#` is a comment.
+
+- `REVIEW_ROOT` is set to `.`. The author's comment: Where the documents and the model live (the repository root by default).
+- `REPORT_DIR` is set to `build`. The author's comment: Where `make report` writes report.md.
+- `PROPOSAL_MAX_WORDS` is set to `1000`. The author's comment: Two pages: the most words a proposal may have.
+
 ## Try it yourself
 
 ```bash

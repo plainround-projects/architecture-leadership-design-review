@@ -92,9 +92,7 @@ def copy_of_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return tmp_path
 ```
 
-`@pytest.fixture` marks a function as a fixture: a test that has a parameter named `copy_of_repo` receives its return
-value. This one copies the real `docs/` into a temporary folder and points the program at it with environment
-variables. `tmp_path` is a fresh empty folder per test, deleted afterwards. `monkeypatch.setenv` changes an
+`@pytest.fixture` marks a function as a fixture: a test that has a parameter named `copy_of_repo` receives its return value. This one copies the real `docs/` into a temporary folder and points the program at it with environment variables. `tmp_path` is a fresh empty folder per test, deleted afterwards. `monkeypatch.setenv` changes an
 environment variable for this test only and undoes it at the end. The type hints (`Path`, `pytest.MonkeyPatch`)
 are optional for pytest, but help the reader.
 
