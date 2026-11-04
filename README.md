@@ -11,6 +11,24 @@ A design review of a photo-uploads proposal, run the way the lesson asks: requir
 
 The lesson's deliverables are documents, so they are here as documents. The code is the part the lesson's stretch asks for ("add a fitness function so it isn't reviewed by hand next time") and the part that makes each "Done when" line checkable.
 
+## Architecture
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/architecture-dark.svg">
+  <img alt="A proposal, its requirements as numbers, review records, a checklist and a TOML model are documents in the repository. The design-review command reads them through the DocumentStore, applies PRP, REQ, REV and CHK rules, runs the fitness functions on the model, and writes one report." src="docs/diagrams/architecture.svg">
+</picture>
+
+Look at the Fitness box: the review's arithmetic, capacity and queue wait and write order, is rerun from the model on every commit instead of being checked by hand.
+
+## How one run flows
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/flow-dark.svg">
+  <img alt="A make run checks each document against the rules, then runs the fitness functions and writes the report; the amber row is the draft failing its own requirement, which the model expects." src="docs/diagrams/flow.svg">
+</picture>
+
+The draft fails as recorded: one worker does 0.5 uploads a second against an average of 3.89, and the run still ends OK because every scenario gave the expected verdict.
+
 ## Prerequisites
 
 | Tool | Version | Used for |
